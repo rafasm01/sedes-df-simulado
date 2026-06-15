@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📝</text></svg>" />
+  <title>Portal do Candidato - SEDES-DF Simulado</title>
+
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Core Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- PDF.js library CDN (For fast client-side PDF text extraction) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+  <script>
+    // Specify the worker source path globally
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+  </script>
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- Glassmorphic Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-logo">📝</span>
+        <span class="brand-name">SEDES Simulado</span>
+      </div>
+
+      <nav class="nav-links">
+        <div class="nav-item active" data-tab="dashboard" onclick="setTab('dashboard')">
+          <span>📊</span> Painel Geral
+        </div>
+        
+        <div class="nav-item" data-tab="downloader" onclick="setTab('downloader')">
+          <span>📥</span> Baixar Provas
+        </div>
+        
+        <div class="nav-item" data-tab="parser" onclick="setTab('parser')">
+          <span>⚡</span> Varrer PDF
+        </div>
+        
+        <div class="nav-item" data-tab="bank" onclick="setTab('bank')">
+          <span>📚</span> Banco de Questões
+        </div>
+        
+        <div class="nav-item" data-tab="simulator" onclick="setTab('simulator')">
+          <span>🚀</span> Fazer Simulado
+        </div>
+        <div class="nav-item" data-tab="help" onclick="setTab('help')">
+          <span>❓</span> Ajuda & Guia
+        </div>
+      </nav>
+
+      <!-- Sidebar footer & control settings -->
+      <div class="sidebar-footer">
+        <button class="theme-toggle-btn" onclick="toggleTheme()">
+          <span id="theme-btn-text">☀️ Modo Claro</span>
+        </button>
+        
+        <div style="font-size: 0.72rem; color: var(--color-text-muted); text-align: center; border-top: 1px solid var(--border-light); padding-top: 12px; line-height: 1.4;">
+          V 1.0.0 • SEDES-DF 2026<br>
+          Operação 100% Local (Offline)
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Viewport Shell -->
+    <main class="main-content" id="main-viewport">
+      <!-- Dynamic view templates are loaded here by app.js -->
+    </main>
+
+  </div>
+
+  <!-- Core Javascript Controller -->
+  <script src="app.js"></script>
+</body>
+</html>
