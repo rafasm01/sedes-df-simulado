@@ -206,6 +206,13 @@ state.simulados = db.getSimulados();
 
 // --- ROUTING / VIEW SWITCHER ---
 function setTab(tabName) {
+  // Check lock permission for administrative tabs
+  const restricted = ['downloader', 'parser', 'bank'];
+  if (restricted.includes(tabName) && state.userRole !== 'admin') {
+    promptAdminUnlock(tabName);
+    return;
+  }
+
   state.activeTab = tabName;
   
   // Pause any running test timers if navigating away from simulator
@@ -222,6 +229,203 @@ function setTab(tabName) {
 
   // Render view
   renderView();
+}
+
+// --- PERMISSIONS, ACCESS PROTECTION & SECURITY ---
+function initLoginCheck() {
+  const hash = localStorage.getItem('admin_password_hash');
+  const overlay = document.getElementById('login-overlay');
+  overlay.style.display = 'flex';
+  
+  // Reset fields
+  document.getElementById('setup-password-input').value = '';
+  document.getElementById('setup-confirm-input').value = '';
+  document.getElementById('login-password-input').value = '';
+  document.getElementById('login-error-msg').style.display = 'none';
+  document.getElementById('login-password-prompt').style.display = 'none';
+  
+  if (!hash) {
+    // Show Setup Admin Password
+    document.getElementById('login-title').innerText = 'Cadastrar Administrador';
+    document.getElementById('login-subtitle').innerText = 'Crie uma senha para proteger o banco de questões contra edições de terceiros';
+    document.getElementById('login-role-selection').style.display = 'none';
+    document.getElementById('login-setup-fields').style.display = 'flex';
+  } else {
+    // Show default Role Selection
+    document.getElementById('login-title').innerText = 'Acesso ao Simulado';
+    document.getElementById('login-subtitle').innerText = 'Selecione seu perfil de acesso';
+    document.getElementById('login-role-selection').style.display = 'flex';
+    document.getElementById('login-setup-fields').style.display = 'none';
+  }
+}
+
+function hashPassword(pwd) {
+  let hash = 5381;
+  for (let i = 0; i < pwd.length; i++) {
+    hash = (hash * 33) ^ pwd.charCodeAt(i);
+  }
+  return (hash >>> 0).toString(16);
+}
+
+function setupAdminPassword() {
+  const pwd = document.getElementById('setup-password-input').value;
+  const confirmPwd = document.getElementById('setup-confirm-input').value;
+  const errMsg = document.getElementById('login-error-msg');
+  
+  if (!pwd) {
+    errMsg.innerText = 'A senha não pode ser vazia.';
+    errMsg.style.display = 'block';
+    return;
+  }
+  
+  if (pwd !== confirmPwd) {
+    errMsg.innerText = 'As senhas não coincidem.';
+    errMsg.style.display = 'block';
+    return;
+  }
+  
+  const hash = hashPassword(pwd);
+  localStorage.setItem('admin_password_hash', hash);
+  
+  // Set role to admin and enter
+  state.userRole = 'admin';
+  document.getElementById('login-overlay').style.display = 'none';
+  updateSidebarLocks();
+  setTab('dashboard');
+}
+
+function selectRole(role) {
+  if (role === 'candidato') {
+    state.userRole = 'candidato';
+    document.getElementById('login-overlay').style.display = 'none';
+    updateSidebarLocks();
+    setTab('dashboard');
+  }
+}
+
+function showAdminPasswordPrompt() {
+  document.getElementById('login-role-selection').style.display = 'none';
+  document.getElementById('login-password-prompt').style.display = 'flex';
+  document.getElementById('login-error-msg').style.display = 'none';
+  setTimeout(() => {
+    const input = document.getElementById('login-password-input');
+    if (input) input.focus();
+  }, 100);
+}
+
+function cancelAdminLogin() {
+  document.getElementById('login-password-prompt').style.display = 'none';
+  document.getElementById('login-role-selection').style.display = 'flex';
+  document.getElementById('login-error-msg').style.display = 'none';
+}
+
+function loginAsAdmin() {
+  const pwd = document.getElementById('login-password-input').value;
+  const hash = hashPassword(pwd);
+  const storedHash = localStorage.getItem('admin_password_hash');
+  const errMsg = document.getElementById('login-error-msg');
+  
+  if (hash === storedHash) {
+    state.userRole = 'admin';
+    document.getElementById('login-overlay').style.display = 'none';
+    updateSidebarLocks();
+    setTab('dashboard');
+  } else {
+    errMsg.innerText = 'Senha incorreta. Acesso negado.';
+    errMsg.style.display = 'block';
+  }
+}
+
+function logoutSession() {
+  // Pause any running test timers
+  if (state.activeTest && state.activeTest.timerActive) {
+    pauseTimer();
+  }
+  state.userRole = null;
+  state.activeTest = null;
+  state.activeTab = 'dashboard';
+  
+  initLoginCheck();
+}
+
+function promptAdminUnlock(targetTab) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay animate-fade';
+  overlay.id = 'admin-unlock-modal';
+  overlay.innerHTML = `
+    <div class="modal-content animate-scale" style="width: 100%; max-width: 400px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.15); background: var(--bg-sidebar); padding: 32px; border-radius: var(--radius-lg);">
+      <span style="font-size: 3rem; display: block; margin-bottom: 16px;">🔑</span>
+      <h3 style="font-size: 1.3rem; margin-bottom: 8px; font-family: var(--font-display); color: var(--color-text-primary);">Modo Administrador</h3>
+      <p style="color: var(--color-text-secondary); font-size: 0.85rem; margin-bottom: 24px;">Esta funcionalidade (<b>${getTabFriendlyName(targetTab)}</b>) é restrita. Digite a senha administrativa para desbloquear.</p>
+      
+      <div class="form-group" style="text-align: left; margin-bottom: 20px;">
+        <label class="form-label">Senha do Administrador</label>
+        <input type="password" id="unlock-password-input" class="form-input" placeholder="Digite a senha..." onkeydown="if(event.key==='Enter') verifyUnlockPassword('${targetTab}')" />
+      </div>
+      
+      <div style="display: flex; gap: 12px;">
+        <button class="btn btn-secondary" onclick="closeUnlockModal()" style="flex-grow: 1; padding: 10px;">Cancelar</button>
+        <button class="btn btn-primary" onclick="verifyUnlockPassword('${targetTab}')" style="flex-grow: 1; padding: 10px;">Desbloquear</button>
+      </div>
+      
+      <p id="unlock-error-msg" style="color: var(--color-danger); font-size: 0.8rem; display: none; margin-top: 12px; font-weight: 600;"></p>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  setTimeout(() => {
+    const input = document.getElementById('unlock-password-input');
+    if (input) input.focus();
+  }, 100);
+}
+
+function getTabFriendlyName(tab) {
+  switch(tab) {
+    case 'downloader': return 'Baixar Provas';
+    case 'parser': return 'Varrer PDF';
+    case 'bank': return 'Banco de Questões';
+    default: return 'Área Administrativa';
+  }
+}
+
+function closeUnlockModal() {
+  const modal = document.getElementById('admin-unlock-modal');
+  if (modal) modal.remove();
+}
+
+function verifyUnlockPassword(targetTab) {
+  const pwd = document.getElementById('unlock-password-input').value;
+  const hash = hashPassword(pwd);
+  const storedHash = localStorage.getItem('admin_password_hash');
+  
+  if (hash === storedHash) {
+    state.userRole = 'admin';
+    closeUnlockModal();
+    updateSidebarLocks();
+    setTab(targetTab);
+  } else {
+    const errMsg = document.getElementById('unlock-error-msg');
+    errMsg.innerText = 'Senha incorreta. Acesso negado.';
+    errMsg.style.display = 'block';
+  }
+}
+
+function updateSidebarLocks() {
+  const restrictedTabs = ['downloader', 'parser', 'bank'];
+  restrictedTabs.forEach(tab => {
+    const navEl = document.querySelector(`.nav-item[data-tab="${tab}"]`);
+    if (navEl) {
+      let label = '';
+      if (tab === 'downloader') label = '<span>📥</span> Baixar Provas';
+      else if (tab === 'parser') label = '<span>⚡</span> Varrer PDF';
+      else if (tab === 'bank') label = '<span>📚</span> Banco de Questões';
+      
+      if (state.userRole === 'admin') {
+        navEl.innerHTML = label;
+      } else {
+        navEl.innerHTML = `${label} <span style="margin-left: auto; font-size: 0.8rem; opacity: 0.6;">🔒</span>`;
+      }
+    }
+  });
 }
 
 function initTheme() {
@@ -2047,6 +2251,16 @@ window.toggleModalQuestionType = toggleModalQuestionType;
 window.updateModalOptionText = updateModalOptionText;
 window.setModalCorrectAnswer = setModalCorrectAnswer;
 
+// Login and Auth Bindings
+window.setupAdminPassword = setupAdminPassword;
+window.selectRole = selectRole;
+window.showAdminPasswordPrompt = showAdminPasswordPrompt;
+window.cancelAdminLogin = cancelAdminLogin;
+window.loginAsAdmin = loginAsAdmin;
+window.logoutSession = logoutSession;
+window.verifyUnlockPassword = verifyUnlockPassword;
+window.closeUnlockModal = closeUnlockModal;
+
 // Initial Startup Calls
 initTheme();
-setTab('dashboard');
+initLoginCheck();

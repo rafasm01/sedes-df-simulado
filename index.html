@@ -62,6 +62,9 @@
         <button class="theme-toggle-btn" onclick="toggleTheme()">
           <span id="theme-btn-text">☀️ Modo Claro</span>
         </button>
+        <button class="theme-toggle-btn" onclick="logoutSession()" style="margin-top: 8px; background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.2); color: var(--color-danger); width: 100%;">
+          🔓 Bloquear / Sair
+        </button>
         
         <div style="font-size: 0.72rem; color: var(--color-text-muted); text-align: center; border-top: 1px solid var(--border-light); padding-top: 12px; line-height: 1.4;">
           V 1.0.0 • SEDES-DF 2026<br>
@@ -75,6 +78,49 @@
       <!-- Dynamic view templates are loaded here by app.js -->
     </main>
 
+  </div>
+
+  <!-- Login Screen Overlay -->
+  <div id="login-overlay" class="modal-overlay" style="display: flex;">
+    <div class="modal-content animate-scale" style="width: 100%; max-width: 450px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.15); background: var(--bg-sidebar); padding: 32px; border-radius: var(--radius-lg);">
+      <span style="font-size: 3.5rem; display: block; margin-bottom: 16px;">🔐</span>
+      <h2 id="login-title" style="font-size: 1.6rem; margin-bottom: 8px; font-family: var(--font-display); color: var(--color-text-primary);">Acesso ao Simulado</h2>
+      <p id="login-subtitle" style="color: var(--color-text-secondary); font-size: 0.9rem; margin-bottom: 24px;">Selecione seu perfil de acesso</p>
+      
+      <div id="login-setup-fields" style="display: none; flex-direction: column; gap: 16px; margin-bottom: 24px; text-align: left;">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label">Cadastrar Senha do Administrador</label>
+          <input type="password" id="setup-password-input" class="form-input" placeholder="Digite uma senha segura..." />
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label">Confirmar Senha</label>
+          <input type="password" id="setup-confirm-input" class="form-input" placeholder="Confirme a senha..." />
+        </div>
+        <button class="btn btn-primary" onclick="setupAdminPassword()" style="width: 100%; padding: 14px;">Definir Senha & Entrar</button>
+      </div>
+
+      <div id="login-role-selection" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+        <button class="btn btn-primary" onclick="selectRole('candidato')" style="padding: 14px; display: flex; justify-content: center; gap: 10px; font-size: 1rem; width: 100%;">
+          👨‍🎓 Entrar como Candidato
+        </button>
+        <button class="btn btn-secondary" onclick="showAdminPasswordPrompt()" style="padding: 14px; display: flex; justify-content: center; gap: 10px; font-size: 1rem; width: 100%;">
+          ⚙️ Entrar como Administrador
+        </button>
+      </div>
+
+      <div id="login-password-prompt" style="display: none; flex-direction: column; gap: 16px; margin-bottom: 20px; text-align: left;">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label">Senha do Administrador</label>
+          <input type="password" id="login-password-input" class="form-input" placeholder="Digite sua senha..." onkeydown="if(event.key==='Enter') loginAsAdmin()" />
+        </div>
+        <div style="display: flex; gap: 12px;">
+          <button class="btn btn-secondary" onclick="cancelAdminLogin()" style="flex-grow: 1; padding: 12px;">Voltar</button>
+          <button class="btn btn-primary" onclick="loginAsAdmin()" style="flex-grow: 1; padding: 12px;">Entrar</button>
+        </div>
+      </div>
+      
+      <p id="login-error-msg" style="color: var(--color-danger); font-size: 0.85rem; display: none; margin-top: 12px; font-weight: 600;"></p>
+    </div>
   </div>
 
   <!-- Core Javascript Controller -->
